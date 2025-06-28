@@ -1,0 +1,31 @@
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Add Inter font import */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+/* Ensure body uses Inter font, if not already handled by tailwind.config.js */
+body {
+  font-family: 'Inter', sans-serif;
+}
+/* ... existing tailwind imports ... */
+
+/* Toggle Switch Styles for SettingsPage */
+.toggle-checkbox {
+  right: auto; /* Reset inline style for right */
+  left: 0; /* Align to left by default */
+  transition: background-color 0.2s ease-in-out, left 0.2s ease-in-out, border-color 0.2s ease-in-out;
+}
+
+.toggle-checkbox:checked {
+  left: 1.25rem; /* Move to the right (w-6 is 1.5rem, so 1.5 - 0.25rem padding/border approx) */
+  border-color: #6366f1; /* indigo-600 */
+}
+.toggle-checkbox:checked + .toggle-label {
+  background-color: #6366f1; /* indigo-600 */
+}
+.toggle-label {
+  transition: background-color 0.2s ease-in-out;
+}
