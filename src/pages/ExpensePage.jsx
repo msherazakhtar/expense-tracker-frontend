@@ -19,28 +19,43 @@ const ExpensePage = () => {
   const categories = ['Food', 'Transport', 'Utilities', 'Entertainment', 'Shopping', 'Other'];
 
   // Fetch expenses on component mount
-  // useEffect(() => {
-  //   const fetchExpenses = async () => {
-  //     displayModal('Fetching expenses...', 'info');
-  //     // --- Replace this with your actual API call ---
-  //     try {
-  //       const response = await fetch('/api/expenses'); // Replace with your Spring Boot endpoint
-  //       if (response.ok) {
-  //         const data = await response.json();
-  //         setExpenses(data); // Assuming backend returns an array of expenses
-  //         displayModal('Expenses loaded!', 'success');
-  //       } else {
-  //         const errorData = await response.json();
-  //         displayModal(errorData.message || 'Failed to load expenses.', 'error');
-  //       }
-  //     } catch (error) {
-  //       console.error('Expenses API error:', error);
-  //       displayModal('Network error or server unavailable.', 'error');
-  //     }
-  //     // --- End of API call replacement ---
-  //   };
-  //   fetchExpenses();
-  // }, [displayModal]);
+  useEffect(() => {
+    const fetchExpenses = async () => {
+      displayModal('Fetching expenses...', 'info');
+      // --- Start of API call replacement ---
+      // Get the userId from wherever it's stored in your application (e.g., context, state, props)
+      // For this example, I'll assume a hardcoded userId for demonstration,
+      // but you should replace '2' with your dynamic userId.
+      const userId = 2; // <<< IMPORTANT: Replace with your actual dynamic userId
+
+      try {
+        const response = await fetch(`http://localhost:5555/expense/getExpenseByUserId/${userId}`);
+
+        if (response.ok) {
+          const data = await response.json();
+          // Assuming your backend returns an array of expense objects directly
+          setExpenses(data);
+          displayModal('Expenses loaded!', 'success');
+        } else {
+          // Attempt to parse error message from the response
+          let errorMessage = 'Failed to load expenses.';
+          try {
+            const errorData = await response.json();
+            errorMessage = errorData.message || errorMessage;
+          } catch (jsonError) {
+            // If response is not JSON, use a generic message or response text
+            errorMessage = `Failed to load expenses. Status: ${response.status} ${response.statusText}`;
+          }
+          displayModal(errorMessage, 'error');
+        }
+      } catch (error) {
+        console.error('Expenses API error:', error);
+        displayModal('Network error or server unavailable.', 'error');
+      }
+      // --- End of API call replacement ---
+    };
+    fetchExpenses();
+  }, []); // displayModal is a dependency because it's used inside the effect
 
   const handleAddEditSubmit = async (e) => { // Added async
     e.preventDefault();
@@ -48,7 +63,7 @@ const ExpensePage = () => {
       // Update expense
       // --- Replace this with your actual API call ---
       try {
-        const response = await fetch(`/api/expenses/${currentExpense.id}`, { // Replace with your Spring Boot endpoint
+        const response = await fetch(`http://localhost:5555/expense/addExpense`, { // Replace with your Spring Boot endpoint
           method: 'PUT', // or PATCH
           headers: {
             'Content-Type': 'application/json',
@@ -244,13 +259,16 @@ const ExpensePage = () => {
                     Name
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Category
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Details
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Amount
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Date
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Category
+                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Created At
                   </th>
                   <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider rounded-tr-lg">
                     Actions
@@ -261,17 +279,21 @@ const ExpensePage = () => {
                 {expenses.map((expense) => (
                   <tr key={expense.id} className="hover:bg-gray-50 transition-colors duration-150">
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 rounded-bl-lg">
-                      {expense.name}
+                      {expense.title}
+                    </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {expense.category}
+                    </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      {expense.details}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                       ${expense.amount.toFixed(2)}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {expense.date}
+                      {expense.createdAt}
                     </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {expense.category}
-                    </td>
+                  
                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2 rounded-br-lg">
                       <button
                         onClick={() => handleEditClick(expense)}

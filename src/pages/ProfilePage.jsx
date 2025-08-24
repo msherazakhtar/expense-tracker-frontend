@@ -2,8 +2,6 @@
 import React, { useState, useEffect } from "react";
 import { useAppContext } from "../AppContext";
 
-// ProfilePage Component
-// User profile management
 const ProfilePage = () => {
   const { displayModal } = useAppContext();
   const [profile, setProfile] = useState({
@@ -12,50 +10,47 @@ const ProfilePage = () => {
     email: "",
     password: "",
     isVerfied: "",
+    userId: "",
   });
-  const [isEditing, setIsEditing] = useState(false);
 
-  // Fetch profile data on component mount
+  const [isEditing, setIsEditing] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
+  // Fetch profile data on mount
   useEffect(() => {
     const fetchProfileData = async () => {
       displayModal("Fetching profile data...", "info");
-      // --- Replace this with your actual API call ---
       try {
         const response = await fetch(
           "http://localhost:5555/users/getUserProfile/2"
-        ); // Replace with your Spring Boot endpoint
+        );
         if (response.ok) {
           const data = await response.json();
-          setProfile(data); // Assuming backend returns { name, email, bio }
-          displayModal("Profile data loaded!", "success");
+          setProfile(data);
+          displayModal("Profile loaded", "success");
         } else {
-          const errorData = await response.json();
-          displayModal(
-            errorData.message || "Failed to load profile data.",
-            "error"
-          );
+          const err = await response.json();
+          displayModal(err.message || "Failed to load profile", "error");
         }
-      } catch (error) {
-        console.error("Profile API error:", error);
-        displayModal("Network error or server unavailable.", "error");
+      } catch (err) {
+        displayModal("Network error", "error");
       }
-      // --- End of API call replacement ---
     };
     fetchProfileData();
   }, []);
 
+  // Handle profile updates (excluding password)
   const handleProfileUpdate = async (e) => {
-    // Added async
     e.preventDefault();
-    console.log("Updating profile:", profile);
-    // Placeholder for API call to update profile
-
-    // --- Replace this with your actual API call ---
     try {
       const response = await fetch(
         "http://localhost:5555/users/updateUserProfile",
         {
-          // Replace with your Spring Boot endpoint
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
@@ -63,19 +58,52 @@ const ProfilePage = () => {
           body: JSON.stringify(profile),
         }
       );
-
       if (response.ok) {
-        displayModal("Profile updated successfully!", "success");
+        displayModal("Profile updated successfully", "success");
         setIsEditing(false);
       } else {
-        const errorData = await response.json();
-        displayModal(errorData.message || "Failed to update profile.", "error");
+        const err = await response.json();
+        displayModal(err.message || "Failed to update profile", "error");
       }
-    } catch (error) {
-      console.error("Update profile API error:", error);
-      displayModal("Network error or server unavailable.", "error");
+    } catch (err) {
+      displayModal("Network error", "error");
     }
-    // --- End of API call replacement ---
+  };
+
+  // Handle password change
+  const handlePasswordChange = async (e) => {
+    e.preventDefault();
+    const { currentPassword, newPassword, confirmPassword } = passwordForm;
+
+    if (newPassword !== confirmPassword) {
+      displayModal("New and Confirm passwords do not match", "error");
+      return;
+    }
+
+    try {
+      const response = await fetch("http://localhost:5555/users/changePassword", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: profile.userId,
+          currentPassword,
+          newPassword,
+        }),
+      });
+
+      if (response.ok) {
+        displayModal("Password updated successfully!", "success");
+        setShowPasswordModal(false);
+        setPasswordForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+      } else {
+        const err = await response.json();
+        displayModal(err.message || "Failed to update password", "error");
+      }
+    } catch (err) {
+      displayModal("Network error", "error");
+    }
   };
 
   return (
@@ -106,16 +134,22 @@ const ProfilePage = () => {
                   {profile.email}
                 </p>
               </div>
-              <div>
-                <p className="text-lg font-medium text-gray-700">Password:</p>
-                <p className="text-xl font-semibold text-gray-900">*****</p>
+              <div className="flex justify-between items-center">
+                <div>
+                  <p className="text-lg font-medium text-gray-700">Password:</p>
+                  <p className="text-xl font-semibold text-gray-900">*****</p>
+                </div>
+                <button
+                  onClick={() => setShowPasswordModal(true)}
+                  className="text-indigo-600 hover:underline"
+                >
+                  Change Password
+                </button>
               </div>
               <div>
                 <p className="text-lg font-medium text-gray-700">Status</p>
                 <p className="text-xl text-gray-900">
-                  {(profile.isVerfied === null) | "true"
-                    ? "Verified"
-                    : "Not Verified"}
+                  {profile.isVerfied === true ? "Verified" : "Not Verified"}
                 </p>
               </div>
             </div>
@@ -131,10 +165,7 @@ const ProfilePage = () => {
         ) : (
           <form onSubmit={handleProfileUpdate} className="space-y-4">
             <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="profileName"
-              >
+              <label className="block text-sm font-medium mb-1" htmlFor="firstName">
                 Firstname
               </label>
               <input
@@ -149,10 +180,7 @@ const ProfilePage = () => {
               />
             </div>
             <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="profileName"
-              >
+              <label className="block text-sm font-medium mb-1" htmlFor="lastName">
                 Lastname
               </label>
               <input
@@ -167,10 +195,7 @@ const ProfilePage = () => {
               />
             </div>
             <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="profileEmail"
-              >
+              <label className="block text-sm font-medium mb-1" htmlFor="profileEmail">
                 Email
               </label>
               <input
@@ -182,24 +207,6 @@ const ProfilePage = () => {
                   setProfile({ ...profile, email: e.target.value })
                 }
                 required
-              />
-            </div>
-            <div>
-              <label
-                className="block text-sm font-medium mb-1"
-                htmlFor="password"
-              >
-                New Password
-              </label>
-              <input
-                type="password"
-                id="password"
-                placeholder="Enter new password (leave blank to keep current)"
-                className="w-full px-4 py-2 border border-gray-300 rounded-md focus:ring-indigo-500 focus:border-indigo-500"
-                value={profile.password}
-                onChange={(e) =>
-                  setProfile({ ...profile, password: e.target.value })
-                }
               />
             </div>
 
@@ -221,6 +228,63 @@ const ProfilePage = () => {
           </form>
         )}
       </div>
+
+      {/* Password Change Modal */}
+      {showPasswordModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg">
+            <h2 className="text-xl font-semibold mb-4">Change Password</h2>
+            <form onSubmit={handlePasswordChange} className="space-y-4">
+              <input
+                type="password"
+                placeholder="Current Password"
+                value={passwordForm.currentPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, currentPassword: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="password"
+                placeholder="New Password"
+                value={passwordForm.newPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, newPassword: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                required
+              />
+              <input
+                type="password"
+                placeholder="Confirm New Password"
+                value={passwordForm.confirmPassword}
+                onChange={(e) =>
+                  setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })
+                }
+                className="w-full px-4 py-2 border border-gray-300 rounded-md"
+                required
+              />
+
+              <div className="flex justify-end gap-2 mt-4">
+                <button
+                  type="button"
+                  onClick={() => setShowPasswordModal(false)}
+                  className="bg-gray-300 text-gray-800 py-2 px-4 rounded-md hover:bg-gray-400"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="bg-indigo-600 text-white py-2 px-4 rounded-md hover:bg-indigo-700"
+                >
+                  Update Password
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
